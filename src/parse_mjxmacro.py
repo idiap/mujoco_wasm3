@@ -1,3 +1,11 @@
+import sys
+import os
+
+MUJOCO_DIR = sys.argv[1]
+
+sys.path.append(os.path.join(MUJOCO_DIR, 'introspect'))
+
+
 auto_gen_lines = {
     "model_definitions": [],
     "model_bindings"   : [],
@@ -13,7 +21,7 @@ parse_mode = (None, None)
 types_to_array_types = {"int":"Int32Array", "mjtNum":"Float64Array", "float": "Float32Array", "mjtByte": "Uint8Array", "char": "Uint8Array", "uintptr_t":"BigUint64Array"}
 
 def parse_pointer_line(line:str, header_lines:list[str], mj_definitions:list[str], emscripten_bindings:list[str], typescript_definitions:list[str]):
-    elements = line.strip("    X(").split(""")""")[0].strip().split(",")
+    elements = line.strip("X(").split(")")[0].strip().split(",")
     elements = [e.strip() for e in elements]
 
     model_ptr = "m" if parse_mode[1] == "model" else "_model->ptr()"
@@ -33,7 +41,7 @@ def parse_pointer_line(line:str, header_lines:list[str], mj_definitions:list[str
     typescript_definitions.append('  '+elements[1].ljust(22)+': '+types_to_array_types[elements[0]].rjust(12)+';')
 
 def parse_int_line(line:str, header_lines:list[str], mj_definitions:list[str], emscripten_bindings:list[str], typescript_definitions:list[str]):
-    name = line.strip("    X(").split(""")""")[0].strip()
+    name = line.strip("X(").split(")")[0].strip()
     mj_definitions     .append('  int  '+name.ljust(14)+'() const { return m->'+name.ljust(14)+'; }')
     emscripten_bindings.append('      .property('+('"'+name+'"').ljust(24)+', &Model::'+name.ljust(22)+')')
 
@@ -47,22 +55,23 @@ def parse_int_line(line:str, header_lines:list[str], mj_definitions:list[str], e
     typescript_definitions.append('  '+name.ljust(22)+': '+('number').rjust(12)+';')
 
 
-with open("include/mujoco/mjmodel.h") as f:
+with open(os.path.join(MUJOCO_DIR, "include/mujoco/mjmodel.h")) as f:
     model_lines = f.readlines()
 
-with open("include/mujoco/mjdata.h") as f:
+with open(os.path.join(MUJOCO_DIR, "include/mujoco/mjdata.h")) as f:
     data_lines = f.readlines()
 
 
 # Parse mjx Macro to get the emscripten bindings and typescript definitions
-with open("include/mujoco/mjxmacro.h") as f:
+with open(os.path.join(MUJOCO_DIR, "include/mujoco/mjxmacro.h")) as f:
     lines = f.readlines()
 
     for line in lines:
         if parse_mode[0] != None:
             if parse_mode[0] == "pointers":
-                if line.strip().startswith("X("):
-                    parse_pointer_line(line, 
+                line2 = line.replace(' ', '').replace('XMJV(', 'X(').replace('XNV(', 'X(')
+                if line2.startswith("X("):
+                    parse_pointer_line(line2, 
                                        model_lines if parse_mode[1] == "model" else data_lines, 
                                        auto_gen_lines[parse_mode[1]+"_definitions"], 
                                        auto_gen_lines[parse_mode[1]+"_bindings"], 
@@ -71,8 +80,9 @@ with open("include/mujoco/mjxmacro.h") as f:
                     parse_mode = (None, None)
 
             if parse_mode[0] == "ints":
-                if line.strip().startswith("X("):
-                    parse_int_line(line, 
+                line2 = line.replace(' ', '').replace('XMJV(', 'X(')
+                if line2.startswith("X("):
+                    parse_int_line(line2, 
                                    model_lines if parse_mode[1] == "model" else data_lines, 
                                    auto_gen_lines[parse_mode[1]+"_definitions"], 
                                    auto_gen_lines[parse_mode[1]+"_bindings"], 
@@ -153,7 +163,14 @@ for line in model_lines:
         parts = line.split("//")
         parts = [part.strip() for part in parts]
         if len(parts[0]) > 0 and len(parts[0].split(" ")) > 0:
-            meat = parts[0].split(" ")[0].split(",")[0]; potatos = parts[1]
+            if len(parts[0].split(" ")[0].split(",")) > 1:
+                meat = parts[0].split(" ")[0].split(",")[0]
+            else:
+                meat = parts[0].split(" ")[0]
+            if len(parts) > 1:
+                potatos = parts[1]
+            else:
+                potatos = ''
             auto_gen_lines["model_enums"].append('      .value('+('"'+meat+'"').ljust(25)+', '+cur_enum_name.ljust(25)+'::'+meat.ljust(25)+')')
             auto_gen_lines["enums_typescript"].append("    /** "+potatos.ljust(40)+" */")
             auto_gen_lines["enums_typescript"].append("    "+meat.ljust(25)+",")

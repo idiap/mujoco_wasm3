@@ -1,0 +1,186 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4040915e..5e9f14d4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -38,10 +38,10 @@ enable_language(CXX)
+ 
+ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+ 
+-option(MUJOCO_BUILD_EXAMPLES "Build samples for MuJoCo" ON)
+-option(MUJOCO_BUILD_SIMULATE "Build simulate library for MuJoCo" ON)
+-option(MUJOCO_BUILD_TESTS "Build tests for MuJoCo" ON)
+-option(MUJOCO_TEST_PYTHON_UTIL "Build and test utility libraries for Python bindings" ON)
++option(MUJOCO_BUILD_EXAMPLES "Build samples for MuJoCo" OFF)
++option(MUJOCO_BUILD_SIMULATE "Build simulate library for MuJoCo" OFF)
++option(MUJOCO_BUILD_TESTS "Build tests for MuJoCo" OFF)
++option(MUJOCO_TEST_PYTHON_UTIL "Build and test utility libraries for Python bindings" OFF)
+ 
+ if(APPLE AND (MUJOCO_BUILD_EXAMPLES OR MUJOCO_BUILD_SIMULATE))
+   enable_language(OBJC)
+@@ -87,7 +87,7 @@ target_include_directories(
+ add_subdirectory(plugin/elasticity)
+ add_subdirectory(plugin/actuator)
+ add_subdirectory(plugin/sensor)
+-add_subdirectory(plugin/sdf)
++# add_subdirectory(plugin/sdf)
+ add_subdirectory(src/engine)
+ add_subdirectory(src/user)
+ add_subdirectory(src/xml)
+@@ -127,6 +127,7 @@ set_target_properties(
+   mujoco PROPERTIES VERSION "${mujoco_VERSION}" PUBLIC_HEADER "${MUJOCO_HEADERS}"
+ )
+ 
++
+ # CMake's built-in FRAMEWORK option doesn't give us control over the dylib name inside the
+ # Framework. We instead make our own Framework here.
+ if(APPLE AND MUJOCO_BUILD_MACOS_FRAMEWORKS)
+@@ -189,50 +190,50 @@ if(BUILD_TESTING AND MUJOCO_BUILD_TESTS)
+   endif()
+ endif()
+ 
+-if(NOT (APPLE AND MUJOCO_BUILD_MACOS_FRAMEWORKS))
+-  # Install the libraries.
+-  install(
+-    TARGETS mujoco
+-    EXPORT ${PROJECT_NAME}
+-    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT runtime
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT runtime
+-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT dev
+-    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/mujoco" COMPONENT dev
+-  )
+-
+-  set(CONFIG_PACKAGE_LOCATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+-
+-  # Generate and install the mujocoTargets.cmake file. This defines the targets as
+-  # IMPORTED libraries for downstream users.
+-  install(
+-    EXPORT ${PROJECT_NAME}
+-    DESTINATION ${CONFIG_PACKAGE_LOCATION}
+-    NAMESPACE mujoco::
+-    FILE "${PROJECT_NAME}Targets.cmake"
+-  )
+-
+-  include(CMakePackageConfigHelpers)
+-
+-  write_basic_package_version_file(
+-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+-    VERSION ${mujoco_VERSION}
+-    COMPATIBILITY AnyNewerVersion
+-  )
+-
+-  configure_package_config_file(
+-    cmake/${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+-    INSTALL_DESTINATION ${CONFIG_PACKAGE_LOCATION}
+-  )
+-
+-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+-                "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+-          DESTINATION ${CONFIG_PACKAGE_LOCATION}
+-  )
+-
+-  # Install also models into share folder.
+-  install(
+-    DIRECTORY model
+-    DESTINATION "${CMAKE_INSTALL_DATADIR}/mujoco"
+-    PATTERN "CMakeLists.txt" EXCLUDE
+-  )
+-endif()
++# if(NOT (APPLE AND MUJOCO_BUILD_MACOS_FRAMEWORKS))
++#   # Install the libraries.
++#   install(
++#     TARGETS mujoco
++#     EXPORT ${PROJECT_NAME}
++#     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT runtime
++#     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT runtime
++#     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT dev
++#     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/mujoco" COMPONENT dev
++#   )
++#
++#   set(CONFIG_PACKAGE_LOCATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
++#
++#   # Generate and install the mujocoTargets.cmake file. This defines the targets as
++#   # IMPORTED libraries for downstream users.
++#   install(
++#     EXPORT ${PROJECT_NAME}
++#     DESTINATION ${CONFIG_PACKAGE_LOCATION}
++#     NAMESPACE mujoco::
++#     FILE "${PROJECT_NAME}Targets.cmake"
++#   )
++#
++#   include(CMakePackageConfigHelpers)
++#
++#   write_basic_package_version_file(
++#     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
++#     VERSION ${mujoco_VERSION}
++#     COMPATIBILITY AnyNewerVersion
++#   )
++#
++#   configure_package_config_file(
++#     cmake/${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++#     INSTALL_DESTINATION ${CONFIG_PACKAGE_LOCATION}
++#   )
++#
++#   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++#                 "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
++#           DESTINATION ${CONFIG_PACKAGE_LOCATION}
++#   )
++#
++#   # Install also models into share folder.
++#   install(
++#     DIRECTORY model
++#     DESTINATION "${CMAKE_INSTALL_DATADIR}/mujoco"
++#     PATTERN "CMakeLists.txt" EXCLUDE
++#   )
++# endif()
+diff --git a/introspect/functions.py b/introspect/functions.py
+index 4e1baaad..db73e753 100644
+--- a/introspect/functions.py
++++ b/introspect/functions.py
+@@ -19,11 +19,11 @@ DO NOT EDIT. THIS FILE IS AUTOMATICALLY GENERATED.
+ 
+ from typing import Mapping
+ 
+-from .ast_nodes import ArrayType
+-from .ast_nodes import FunctionDecl
+-from .ast_nodes import FunctionParameterDecl
+-from .ast_nodes import PointerType
+-from .ast_nodes import ValueType
++from ast_nodes import ArrayType
++from ast_nodes import FunctionDecl
++from ast_nodes import FunctionParameterDecl
++from ast_nodes import PointerType
++from ast_nodes import ValueType
+ 
+ FUNCTIONS: Mapping[str, FunctionDecl] = dict([
+     ('mj_defaultVFS',
+diff --git a/src/engine/engine_util_errmem.c b/src/engine/engine_util_errmem.c
+index 7c63c1ce..e313b9a5 100644
+--- a/src/engine/engine_util_errmem.c
++++ b/src/engine/engine_util_errmem.c
+@@ -97,7 +97,7 @@ void mju_writeLog(const char* type, const char* msg) {
+     // get time
+     time(&rawtime);
+ 
+-#if defined(_POSIX_C_SOURCE) || defined(__APPLE__) || defined(__STDC_VERSION_TIME_H__)
++#if defined(_POSIX_C_SOURCE) || defined(__APPLE__) || defined(__EMSCRIPTEN__) || defined(__STDC_VERSION_TIME_H__)
+     localtime_r(&rawtime, &timeinfo);
+ #elif _MSC_VER
+     localtime_s(&timeinfo, &rawtime);
+diff --git a/src/xml/xml_native_reader.cc b/src/xml/xml_native_reader.cc
+index e25626d2..cd281632 100644
+--- a/src/xml/xml_native_reader.cc
++++ b/src/xml/xml_native_reader.cc
+@@ -1006,9 +1006,10 @@ void mjXReader::Compiler(XMLElement* section, mjSpec* spec) {
+   if (MapValue(section, "discardvisual", &n, bool_map, 2)) {
+     spec->compiler.discardvisual = (n==1);
+   }
+-  if (MapValue(section, "usethread", &n, bool_map, 2)) {
+-    spec->compiler.usethread = (n==1);
+-  }
++  // if (MapValue(section, "usethread", &n, bool_map, 2)) {
++  //   spec->compiler.usethread = (n==1);
++  // }
++  spec->compiler.usethread = false;
+   if (MapValue(section, "fusestatic", &n, bool_map, 2)) {
+     spec->compiler.fusestatic = (n==1);
+   }
